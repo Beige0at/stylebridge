@@ -1,0 +1,36 @@
+# StyleBridge — Python dependencies
+#
+# Install with:  pip install -r requirements.txt
+#
+# NOTE on PyTorch: the plain `torch`/`torchvision` wheels above resolve to the
+# default CPU/CUDA build. On the AMD ROCm machine used for development, install
+# the ROCm wheels FIRST, then the rest, e.g.:
+#   pip install torch==2.6.0 torchvision==0.21.0 \
+#       --index-url https://download.pytorch.org/whl/rocm6.1
+# (For CPU-only this is unnecessary.)
+
+# Core engine
+torch>=2.4
+torchvision>=0.19
+numpy>=1.26
+Pillow>=10.0
+opencv-python>=4.8
+scikit-image>=0.22
+scipy>=1.11
+
+# REST API + htmx UI
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9        # required for multipart form uploads
+pydantic>=2.6
+httpx>=0.27                    # required by fastapi.testclient
+
+# Benchmark metrics
+lpips>=0.1.4                   # LPIPS (used by run_benchmarks.py)
+
+# Report figures
+matplotlib>=3.8
+
+# Optional: MediaPipe face-mesh Saliency Guard.
+# If absent the engine automatically falls back to OpenCV Haar cascades.
+# mediapipe>=0.10

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StyleBridge</title>
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<style>
+  /* Gruvbox light palette */
+  :root {
+    --bg0:#fbf1c7; --bg1:#ebdbb2; --bg2:#d5c4a1; --bg3:#bdae93; --bg4:#a89984;
+    --fg0:#282828; --fg1:#3c3836; --fg2:#504945; --fg3:#665c54; --fg4:#7c6f64;
+    --red:#9d0006; --green:#79740e; --yellow:#b57614; --blue:#076678;
+    --purple:#8f3f71; --aqua:#427b58; --orange:#af3a03; --gray:#928374;
+
+    --bg:var(--bg0);
+    --panel:#f2e5bc;
+    --line:var(--bg3);
+    --txt:var(--fg1);
+    --muted:var(--fg4);
+    --accent:var(--blue);
+    --good:var(--green);
+    --bad:var(--red);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:"JetBrains Mono","Fira Code","Cascadia Code",ui-monospace,
+                     SFMono-Regular,Menlo,Consolas,monospace; font-size:14px; }
+  header { padding:18px 26px; border-bottom:2px solid var(--line);
+           background:var(--bg1); display:flex; align-items:baseline; gap:12px; }
+  header h1 { font-size:20px; margin:0; letter-spacing:.5px; color:var(--orange); }
+  header h1::before { content:"\25B6 "; color:var(--green); }
+  header span { color:var(--muted); font-size:12px; }
+  main { max-width:1100px; margin:0 auto; padding:26px;
+         display:grid; grid-template-columns:360px 1fr; gap:26px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+           padding:18px; box-shadow:2px 2px 0 var(--bg2); }
+  .panel h2 { margin:0 0 14px; font-size:13px; text-transform:uppercase;
+              letter-spacing:1px; color:var(--aqua); }
+  .panel h2::before { content:"# "; color:var(--gray); }
+  label { display:block; font-size:12px; color:var(--fg3); margin:12px 0 5px; }
+  input[type=file], input[type=number], select {
+    width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--line);
+    background:var(--bg0); color:var(--txt); font-size:13px; font-family:inherit; }
+  input[type=file]::file-selector-button {
+    font-family:inherit; font-size:12px; margin-right:10px; padding:5px 10px;
+    border:1px solid var(--line); border-radius:5px; cursor:pointer;
+    background:var(--bg1); color:var(--fg1); }
+  input:focus, select:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  input[type=checkbox] { accent-color:var(--accent); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .jfield { display:none; }
+  a.jshow { font-size:12px; color:var(--purple); cursor:pointer; margin-left:6px;
+            text-decoration:underline dotted; user-select:none; }
+  a.jshow:hover { color:var(--orange); }
+  button { margin-top:18px; width:100%; padding:11px; border:1px solid var(--fg2);
+           border-radius:6px; cursor:pointer; background:var(--green); color:var(--bg0);
+           font-family:inherit; font-weight:700; font-size:14px; letter-spacing:.5px;
+           box-shadow:2px 2px 0 var(--fg2); }
+  button:hover { background:var(--aqua); }
+  button:active { transform:translate(1px,1px); box-shadow:1px 1px 0 var(--fg2); }
+  .status { padding:12px; border-radius:6px; font-size:13px; margin:0 0 12px;
+            border-left:4px solid var(--line); }
+  .status.running { background:rgba(7,102,120,.12); border-left-color:var(--blue); }
+  .status.done { background:rgba(121,116,14,.14); border-left-color:var(--green); }
+  .status.failed { background:rgba(157,0,6,.10); color:var(--bad);
+                   border-left-color:var(--red); }
+  .result img { width:100%; border-radius:8px; border:1px solid var(--line);
+                box-shadow:2px 2px 0 var(--bg2); }
+  .result .meta { color:var(--muted); font-size:12px; margin-top:10px; line-height:1.6; }
+  .placeholder { color:var(--muted); font-size:13px; padding:40px 0; text-align:center; }
+  .placeholder::before { content:"~ "; color:var(--gray); }
+  .hint { font-size:11px; color:var(--muted); margin-top:4px; }
+</style>
+</head>
+<body>
+<header><h1>StyleBridge</h1><span>neural style transfer &mdash; SWD &middot; Adam/L-BFGS &middot; saliency guard</span></header>
+
+<main>
+  <!-- Control panel -->
+  <section class="panel">
+    <h2>New transfer</h2>
+    <form hx-post="/ui/transfers" hx-target="#result" hx-swap="innerHTML"
+          hx-encoding="multipart/form-data" enctype="multipart/form-data">
+      <label>Content image</label>
+      <input type="file" name="content" accept="image/*" required>
+
+      <label>Style image</label>
+      <input type="file" name="style" accept="image/*" required>
+
+      <div class="row">
+        <div>
+          <label>Resolution</label>
+          <input type="number" name="resolution" value="400" min="64" step="8">
+        </div>
+        <div>
+          <label>Steps</label>
+          <input type="number" name="num_steps" value="250" min="1">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Optimizer</label>
+          <select name="optimizer">
+            <option value="adam">Adam (recommended)</option>
+            <option value="adam_lbfgs">Adam + refinement</option>
+            <option value="lbfgs">L-BFGS</option>
+          </select>
+        </div>
+        <div>
+          <label>Style objective</label>
+          <select name="style_mode">
+            <option value="swd">SWD</option>
+            <option value="gram">Gram</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Saliency guard
+        <a class="jshow" id="cfToggle"
+           onclick="(function(a){var e=document.getElementById('cf');e.classList.toggle('jfield');a.textContent=e.classList.contains('jfield')?'+ settings':'× settings';})(this)">+ settings</a>
+      </label>
+      <select name="saliency_guard" id="guard">
+        <option value="off">Off</option>
+        <option value="haar">Haar (no dependency)</option>
+        <option value="mediapipe">MediaPipe (face mesh)</option>
+      </select>
+
+      <div id="cf" class="jfield">
+        <div class="row">
+          <div>
+            <label>Content weight</label>
+            <input type="number" name="content_weight" value="1" step="any">
+          </div>
+          <div>
+            <label>Style weight</label>
+            <input type="number" name="style_weight" value="10000" step="any">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Guard content boost</label>
+            <input type="number" name="guard_content_boost" value="2.0" step="any">
+          </div>
+          <div>
+            <label>Guard blend</label>
+            <input type="number" name="guard_blend" value="1.0" step="any">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:none">
+        <input name="lbfgs_steps" value="20">
+        <input name="line_search" value="none">
+        <input name="seed" value="0">
+      </div>
+
+      <button type="submit">Transfer</button>
+    </form>
+  </section>
+
+  <!-- Result area -->
+  <section class="panel">
+    <h2>Output</h2>
+    <div id="result">
+      <div class="placeholder">Choose a content and style image, then press Transfer.</div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

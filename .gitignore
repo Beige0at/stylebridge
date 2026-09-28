@@ -1,0 +1,27 @@
+# virtualenv / caches
+.stylebridge_env/
+.torch/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# runtime spool produced by the API
+api_spool/
+
+# bulk generated benchmark images (metrics are kept in the CSVs; regenerate with
+# `python run_mould_rosin.py`). The single report example output is kept.
+results/mould_rosin/*.jpg
+!results/mould_rosin/swd_adam__angel1024__greatwave.jpg
+
+# large saliency masks (regenerated on demand)
+results/losses/*.npy
+
+# ad-hoc test artifacts
+api_test_out.jpg
+output.jpg
+result.jpg
+
+# the written report and its artefacts are submitted separately, not in this repo
+report/
+*.odt
+*.pdf
