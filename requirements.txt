@@ -14,7 +14,7 @@ torch>=2.4
 torchvision>=0.19
 numpy>=1.26
 Pillow>=10.0
-opencv-python>=4.8
+opencv-python>=4.8,<5           # OpenCV 5.x dropped cv2.CascadeClassifier (used by the Saliency Guard)
 scikit-image>=0.22
 scipy>=1.11
 
