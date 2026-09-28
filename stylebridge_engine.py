@@ -229,6 +229,12 @@ _haar_eye = None
 def _get_haar_cascades():
     global _haar_face, _haar_profile, _haar_eye
     if _haar_face is None:
+        # OpenCV 5 removed the cascade API. Fail with a message that says what
+        # to do, rather than a bare AttributeError.
+        if not hasattr(cv2, "CascadeClassifier") or not hasattr(cv2.data, "haarcascades"):
+            raise RuntimeError(
+                "OpenCV >=5 removed cv2.CascadeClassifier; the Saliency Guard "
+                "needs opencv-python<5.")
         data = cv2.data.haarcascades
         _haar_face = cv2.CascadeClassifier(os.path.join(data, "haarcascade_frontalface_default.xml"))
         _haar_profile = cv2.CascadeClassifier(os.path.join(data, "haarcascade_profileface.xml"))
